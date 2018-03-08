@@ -1,0 +1,55 @@
+<link rel="stylesheet" href="/bulma.min.css" />
+<div class="container">
+  <div class="content">
+    <div class="section">
+      <h1>Please insert token</h1>
+      <p>use "answer" if someone is ringing the bell. Use "open" otherwise</p>
+      <div class="field has-addons">
+        <div class="control">
+          <input class="input" id=input_token placeholder=token type=password>
+        </div>
+        <div class="control">
+          <button class="button" id=button_show_token>toggle show</button>
+        </div>
+      </div>
+      <div class="field has-addons">
+        <div class="control is-fullwidth">
+          <button class="button is-large is-primary" id=button_open>open</button>
+        </div>
+        <div class="control">
+          <button class="button is-large is-secondary" id=button_answer>answer</button>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <h2>Response</h2>
+      <button class="button is-fullwidth is-danger is-outlined" id=button_clear_responses>clear</button>
+      <pre id=pre_response>nothing yet</pre>
+    </div>
+  </div>
+</div>
+<script>
+if(localStorage.token) {
+  input_token.value = atob(localStorage.token);
+}
+let isShowing = false;
+button_show_token.addEventListener('click', () => input_token.setAttribute('type', (isShowing = !isShowing) ? 'text' : 'password'));
+
+const getPhoneHandle = (method) => () => {
+  const token = input_token.value;
+  fetch(`/api/phone/${method}/${token}/`)
+    .then((res) => res.text())
+    .then((res) => {
+      if(res.split(':')[0] === 'OK') {
+        localStorage.token = btoa(token);
+      }
+
+      pre_response.textContent = res + '\n' + pre_response.textContent;
+    })
+}
+button_answer.addEventListener('click', getPhoneHandle('answer'));
+button_open.addEventListener('click', getPhoneHandle('open'));
+button_clear_responses.addEventListener('click', () => {
+  pre_response.textContent = 'cleared responses'
+});
+</script>

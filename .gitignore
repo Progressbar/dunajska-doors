@@ -1,0 +1,8 @@
+env.js
+token-hashes*
+node_modules
+log.txt
+*.pyc
+
+### VIM
+*.sw[a-z]

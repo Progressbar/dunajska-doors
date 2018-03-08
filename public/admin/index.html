@@ -1,0 +1,151 @@
+<link rel="stylesheet" href="/bulma.min.css" />
+<div class="container">
+  <div class="content">
+    <div class="section">
+      <h1>door.bar</h1>
+      <p>use "answer" if someone is ringing the bell. Use "open" otherwise</p>
+      <label class="label">
+        Token
+        <div class="field has-addons">
+            <div class="control">
+              <input class="input" id=input_token placeholder=token type=password>
+            </div>
+            <div class="control">
+              <button class="button" id=button_show_token>toggle show</button>
+            </div>
+        </div>
+      </label>
+      <div class="field has-addons">
+        <div class="control is-fullwidth">
+          <button class="button is-large is-primary" id=button_open>open</button>
+        </div>
+        <div class="control">
+          <button class="button is-large is-secondary" id=button_answer>answer</button>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <h1>Add user</h1>
+      <p>privileges are a space-separated list of "add-user read-list"</p>
+      <label class="label">
+        Name
+        <div class="field">
+          <input class="input" id="input_new_name" placeholder="Charles Babbage">
+        </div>
+      </label>
+      <label class="label">
+        Why
+        <div class="field">
+          <input class="input" id="input_new_why" placeholder="Honorary Guest, Fixed Desk">
+        </div>
+      </label>
+      <label class="label">
+        Email/contact
+        <div class="field">
+          <input class="input" id="input_new_contact" placeholder="charles.babbage@gmail.com">
+        </div>
+      </label>
+      <label class="label">
+        Token
+        <div class="field has-addons">
+          <div class="control">
+            <input class="input" id=input_new_token type=password placeholder="password123">
+          </div>
+          <div class="control">
+            <button class="button" id=button_show_new_token>toggle show</button>
+          </div>
+        </div>
+      </label>
+      <label class="label">
+        Privileges
+        <div class="field">
+          <input class="input" id="input_new_privileges" placeholder="add-user remove-user read-list">
+        </div>
+      </label>
+      <br/>
+      <div class="field">
+        <button class="button is-primary is-large" id=button_add_user title="requires 'add-user' privilege">add user</button><br/>
+      </div>
+    </div>
+    <div class="section">
+      <h1>Other Actions</h1>
+        <button class="button" id=button_refresh_users>refresh user list</button>
+        <button class="button" id=button_show_user_list title="requires 'read-list' privilege">show user list</button>
+    </div>
+    <div class="section">
+      <h2>Response</h2>
+      <button class="button is-fullwidth is-danger is-outlined" id=button_clear_responses>clear</button>
+      <pre id=pre_response>nothing yet</pre>
+    </div>
+  </div>
+</div>
+<script>
+if(localStorage.token) {
+  input_token.value = atob(localStorage.token);
+}
+let isShowing = false;
+button_show_token.addEventListener('click', () => input_token.setAttribute('type', (isShowing = !isShowing) ? 'text' : 'password'));
+const log = (text) => {
+      pre_response.textContent = text + '\n' + pre_response.textContent;
+}
+
+const getPhoneHandle = (method) => () => {
+  const token = input_token.value;
+  fetch(`/api/phone/${method}/${token}/`)
+    .then((res) => res.text())
+    .then((res) => {
+      if(res.split(':')[0] === 'OK') {
+        localStorage.token = btoa(token);
+      }
+
+      log(res);
+    })
+}
+button_answer.addEventListener('click', getPhoneHandle('answer'));
+button_open.addEventListener('click', getPhoneHandle('open'));
+button_clear_responses.addEventListener('click', () => {
+  pre_response.textContent = 'cleared responses'
+});
+
+let isNewTokenShowing = false;
+button_show_new_token.addEventListener('click', () => input_new_token.setAttribute('type', (isNewTokenShowing = !isNewTokenShowing) ? 'text' : 'password'));
+button_add_user.addEventListener('click', () => {
+  fetch(`/api/users`, { 
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'add user',
+      fromToken: input_token.value,
+      token: input_new_token.value,
+      name: `${input_new_name.value} (${input_new_why.value}) <${input_new_contact.value}>`,
+      privileges: input_new_privileges.value.split(' ')
+    })
+  })
+    .then((res) => res.text())
+    .then((res) => {
+      log(res);
+      input_new_token.value = '';
+      input_new_name.value = '';
+      input_new_why.value = '';
+      input_new_contact.value = '';
+      input_new_privileges.value = '';
+    });
+});
+button_refresh_users.addEventListener('click', () => {
+  fetch('/api/users/update')
+    .then((res) => res.text())
+    .then(log);
+});
+button_show_user_list.addEventListener('click', () => {
+  fetch(`/api/users`, { 
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'list users',
+      fromToken: input_token.value,
+    })
+  })
+    .then((res) => res.text())
+    .then((res) => { log(JSON.stringify(JSON.parse(res), null, ' ')); });
+});
+</script>
