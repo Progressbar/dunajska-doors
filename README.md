@@ -1,11 +1,11 @@
 # SETUP
 ```bash
-mv env.sample.js env.js
+$ mv env.sample.js env.js
 ```
 
 # RUN
 ```bash
-node web-server
+$ node web-server
 ```
 
 # NOTES
