@@ -1,7 +1,12 @@
+# env
 env.js
-token-hashes*
+*.db
+*.log
+
+# node
 node_modules
-log.txt
+
+# python
 *.pyc
 
 ### VIM
