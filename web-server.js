@@ -63,7 +63,7 @@ const apiRoute = express.Router();
 app.use('/api', apiRoute);
 app.use(express.static(env.path + 'public'));
 
-apiRoute.get('/api/users/update', (req, res) => {
+apiRoute.get('/users/update', (req, res) => {
   const now = Date.now();
   if(now - lastUsersUpdate > usersUpdateDebounce) {
     log('user: updating users from request');
