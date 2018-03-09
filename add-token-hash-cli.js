@@ -1,4 +1,5 @@
 const addTokenHash = require('./add-token-hash');
+const env = require('./env');
 
 const [token, name, privileges=''] = process.argv.slice(2);
 

@@ -1,7 +1,13 @@
 # SETUP
+
+## required
 ```bash
 $ mv env.sample.js env.js
+$ npm i
 ```
+
+## optional
+none yet
 
 # RUN
 ```bash

@@ -19,8 +19,19 @@ let lastUsersUpdate = Date.now() - usersUpdateDebounce;
 const updateUsers = (cb=() => {}) => {
   fs.readFile(env.path + 'token-hashes.txt', 'utf8', (err, data) => {
     if(err) {
-      console.log(err);
-      return cb(err);
+      log('user: no user file found. Assuming no users. Creating user file');
+      return fs.open(env.path + 'token-hashes.txt', 'wx', (err, fd) => {
+        if(err) {
+          log('user: something went wrong with creating the user file');
+          log(err);
+          return cb(err);
+        } 
+  
+        log('user: created user file');
+        cb();
+
+        fs.closeSync(fd);
+      })
     }
 
     const lines = data.split('\n').filter((line) => line.trim().length > 0);
@@ -34,7 +45,7 @@ const updateUsers = (cb=() => {}) => {
 }
 
 // append to file
-const stream = fs.createWriteStream('log.txt', { flags: 'a' });
+const stream = fs.createWriteStream(env.path + 'log.txt', { flags: 'a' });
 
 const log = (...args) => {
 	const str = `${new Date().toJSON()}|${args.join(', ')}`;
@@ -153,4 +164,4 @@ apiRoute.post('/users', (req, res) => {
       res.send(`ERROR: no action "${action}"`);
   }
 });
-app.listen(80, () => log('info: web server started'));
+app.listen(env.port, () => log('info: web server started'));
