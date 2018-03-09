@@ -15,4 +15,7 @@ $ node web-server
 ```
 
 # NOTES
-the python script will only work on the rpi
+The python script will only work on the rpi. Right now it just errors out and node ignores it
+
+You can reach the server at `http://localhost:8080`, but you change the port in the env file
+
