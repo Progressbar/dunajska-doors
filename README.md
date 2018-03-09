@@ -2,7 +2,7 @@
 
 ## required
 ```bash
-$ mv env.sample.js env.js
+$ cp env.sample.js env.js
 $ npm i
 ```
 
