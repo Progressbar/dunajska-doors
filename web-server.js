@@ -1,6 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 
+const { request } = require('http');
+
 const { exec } = require('child_process');
 const fs = require('fs');
 
@@ -96,6 +98,15 @@ apiRoute.get('/phone/:fn/:token/', (req, res) => {
       phoneLastDate = now;
       exec(`/home/pi/progressbar/door.py ${req.params.fn}`);
       log(`phone: "${fromUser.name}" used action "${req.params.fn}" succesfully`);
+      const msgBarRequest = request({
+        hostname: '192.168.223.46',
+        port: 8080,
+        method: 'GET',
+        path: `/api/msg-bar/display-temporary/${encodeURIComponent(`doors: "${fromUser.name}" used action "${req.params.fn}"`)}/5000`,
+      });
+      msgBarRequest.end();
+
+
       res.send('OK: your token is valid. Opening doors in 14s :)');
     } else {
       log(`phone: "${fromUser.name}" tried action "${req.params.fn}" but was debounced`);
