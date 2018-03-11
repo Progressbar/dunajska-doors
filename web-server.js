@@ -102,7 +102,7 @@ apiRoute.get('/phone/:fn/:token/', (req, res) => {
         hostname: '192.168.223.46',
         port: 8080,
         method: 'GET',
-        path: `/api/msg-bar/display-temporary/${encodeURIComponent(`doors: "${fromUser.name}" used action "${req.params.fn}"`)}/5000`,
+        path: `/api/msg-bar/display-temporary/${encodeURIComponent(`${fromUser.name}\nopened doors through "${req.params.fn}"`)}/5000`,
       });
       msgBarRequest.end();
 
