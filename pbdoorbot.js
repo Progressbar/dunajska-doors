@@ -19,7 +19,9 @@ const openDoor = (ctx) => {
 
 const commands = [
     'o',
-    'open'
+    'open',
+    'O',
+    'Open'
 ]
 
 for (let command of commands) {
