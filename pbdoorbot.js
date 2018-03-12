@@ -22,11 +22,17 @@ const commands = [
     'open',
     'O',
     'Open'
-]
+];
+const slashCommands = commands.map(command => `/${command}`);
+const allCommands = [...commands, ...slashCommands];
 
-for (let command of commands) {
-    bot.command(command, openDoor)
-    bot.hears(command, openDoor)
-}
+bot.on('text', (ctx, next) => {
+  const [ command ] = ctx.message.text.split(' ');
+  if (allCommands.includes(command)) {
+    openDoor(ctx); 
+  }
+
+  next();
+})
 
 bot.startPolling()
