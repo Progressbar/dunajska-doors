@@ -7,7 +7,6 @@ const bot = new Telegraf(token)
 
 const extractToken = (msg) => {
     const [ command, token ] = msg.split(' ')
-  console.log(command, token);
 
     return token
 }
@@ -29,7 +28,7 @@ const allCommands = [...commands, ...slashCommands];
 
 bot.on('text', (ctx, next) => {
   const [ command ] = ctx.message.text.split(' ');
-  if(allCommands.includes(command)) {
+  if (allCommands.includes(command)) {
     openDoor(ctx); 
   }
 
