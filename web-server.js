@@ -99,11 +99,14 @@ apiRoute.get('/phone/:fn/:token/', (req, res) => {
       exec(`/home/pi/progressbar/door.py ${req.params.fn}`);
       log(`phone: "${fromUser.name}" used action "${req.params.fn}" succesfully`);
       const msgBarRequest = request({
-        hostname: '192.168.223.46',
+        hostname: 'pi.towc',
         port: 8080,
         method: 'GET',
         path: `/api/msg-bar/display-temporary/${encodeURIComponent(`${fromUser.name.split('<')[0]}\nopened doors through "${req.params.fn}"`)}/5000`,
       });
+      msgBarRequest.on('error', (err) => {
+        log(`requests: could not connect to towcpi: ${err}`);
+      })
       msgBarRequest.end();
 
 
