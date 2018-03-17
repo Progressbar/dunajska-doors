@@ -96,7 +96,7 @@ apiRoute.get('/phone/:fn/:token/', (req, res) => {
     const now = Date.now();
     if (now - phoneLastDate > phoneDebounce) {
       phoneLastDate = now;
-      exec(`/home/pi/progressbar/door.py ${req.params.fn}`);
+      exec(`${env.path}/door.py ${req.params.fn}`);
       log(`phone: "${fromUser.name}" used action "${req.params.fn}" succesfully`);
       const displayText = `${fromUser.name.substring(0, 34).split('<')[0]}\nopened doors through "${req.params.fn}"`;
       const msgBarRequest = request({
