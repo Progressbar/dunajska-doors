@@ -56,6 +56,29 @@ const updateUsers = (cb = () => {}) => {
   });
 };
 
+const testTokenStrength = (token) => {
+  const errors = [];
+
+  if (token.length < 9) {
+    errors.push('must be longer than 9 chars');
+  }
+  if (token.toLowerCase() === token) {
+    errors.push('must contain at least 1 uppercase character');
+  }
+  if (token.toUpperCase() === token) {
+    errors.push('must contain at least 1 lowercase character');
+  }
+  if (!token.match(/\d/)) {
+    errors.push('must contain at least 1 decimal digit');
+  }
+
+  if (errors.length > 0) {
+    return { err: errors.join(', ') };
+  }
+
+  return { ok: true };
+};
+
 
 log('user: updating users at initialization');
 updateUsers(() => log('user: updated users at initialization'));
@@ -106,7 +129,7 @@ apiRoute.get('/phone/:fn/:token/', (req, res) => {
       });
       msgBarRequest.on('error', (err) => {
         log(`requests: could not connect to towcpi: ${err}`);
-      })
+      });
       msgBarRequest.end();
 
 
@@ -140,6 +163,13 @@ apiRoute.post('/users', (req, res) => {
         } else if (!token) {
           res.send('ERROR: missing parameter "token"');
         } else {
+          const strengthCheck = testTokenStrength(token);
+
+          if (strengthCheck.err) {
+            res.send(`ERROR: token not strong enough: ${strengthCheck.err}`);
+            return;
+          }
+
           addTokenHash(token, name, privileges, (err) => {
             if (err) {
               log(`user: error while trying to add the user: ${err}`);
