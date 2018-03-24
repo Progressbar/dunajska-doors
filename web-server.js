@@ -22,6 +22,11 @@ const log = (...args) => {
 
 const { hash: hashFn } = env;
 
+const actionList = [
+  'open',
+  'answer',
+];
+
 let users = {};
 const phoneDebounce = 14 * 1000;
 let phoneLastDate = Date.now() - phoneDebounce;
@@ -115,28 +120,34 @@ apiRoute.get('/users/:fn/:token/', (req, res) => {
 */
 apiRoute.get('/phone/:fn/:token/', (req, res) => {
   const fromUser = users.find(user => user.hash === hashFn(req.params.token));
+  const { fn: action } = req.params;
+
   if (fromUser) {
     const now = Date.now();
     if (now - phoneLastDate > phoneDebounce) {
-      phoneLastDate = now;
-      exec(`${env.path}/door.py ${req.params.fn}`);
-      log(`phone: "${fromUser.name}" used action "${req.params.fn}" succesfully`);
-      const displayText = `${fromUser.name.substring(0, 34).split('<')[0]}\nopened doors through "${req.params.fn}"`;
-      const msgBarRequest = request({
-        hostname: 'pi.towc',
-        port: 8080,
-        method: 'GET',
-        path: `/api/msg-bar/display-temporary/${encodeURIComponent(displayText)}/5000`,
-      });
-      msgBarRequest.on('error', (err) => {
-        log(`requests: could not connect to towcpi: ${err}`);
-      });
-      msgBarRequest.end();
+      if (actionList.includes(action)) {
+        phoneLastDate = now;
+        exec(`${env.path}/door.py ${action}`);
+        log(`phone: "${fromUser.name}" used action "${action}" succesfully`);
+        const displayText = `${fromUser.name.substring(0, 34).split('<')[0]}\nopened doors through "${action}"`;
+        const msgBarRequest = request({
+          hostname: 'pi.towc',
+          port: 8080,
+          method: 'GET',
+          path: `/api/msg-bar/display-temporary/${encodeURIComponent(displayText)}/5000`,
+        });
+        msgBarRequest.on('error', (err) => {
+          log(`requests: could not connect to towcpi: ${err}`);
+        });
+        msgBarRequest.end();
 
-
-      res.send('OK: your token is valid. Opening doors in 14s :)');
+        res.send('OK: your token is valid. Opening doors in 14s :)');
+      } else {
+        log(`phone: "${fromUser.name}" tried invalid action "${action}"`);
+        res.send('ERROR: your action is invalid. Try "open" or "answer"');
+      }
     } else {
-      log(`phone: "${fromUser.name}" tried action "${req.params.fn}" but was debounced`);
+      log(`phone: "${fromUser.name}" tried action "${action}" but was debounced`);
       res.send(`ERROR: already processing a different request, try again in ${phoneDebounce - (now - phoneLastDate)}ms. If the problem persists, contact Matei Copot: matei@copot.eu`);
     }
   } else {
