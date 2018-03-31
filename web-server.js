@@ -1,5 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const SSE = require('express-sse');
+const sse = new SSE('connected');
 
 const { request } = require('http');
 
@@ -9,6 +11,8 @@ const fs = require('fs');
 const env = require('./env');
 const addTokenHash = require('./add-token-hash');
 const paths = require('./paths');
+const phoneInput = require('./phone-input');
+const msgBar = require('./msg-bar');
 
 // append to file
 const stream = fs.createWriteStream(paths.logFile, { flags: 'a' });
@@ -22,14 +26,17 @@ const log = (...args) => {
 
 const { hash: hashFn } = env;
 
-const actionList = [
-  'open',
-  'answer',
-];
+const actions = {
+  open: {
+    debounce: 14 * 1000, 
+  },
+  answer: {
+    debounce: 6 * 1000,
+  },
+};
+let phoneNextAvailableDate = Date.now();
 
 let users = {};
-const phoneDebounce = 14 * 1000;
-let phoneLastDate = Date.now() - phoneDebounce;
 
 const usersUpdateDebounce = 2 * 1000;
 let lastUsersUpdate = Date.now() - usersUpdateDebounce;
@@ -91,6 +98,25 @@ updateUsers(() => log('user: updated users at initialization'));
 const app = express();
 app.use(bodyParser.json());
 
+app.get('/sse/phone-input', sse.init);
+let isPhoneRinging = phoneInput.state;
+phoneInput.addListener((isPhoneBeingUsed) => {
+  const now = Date.now();
+  if (isPhoneBeingUsed && now > phoneNextAvailableDate) {
+    isPhoneRinging = true;
+    sse.send('RING: started'); 
+    log('phone: ringing');
+    msgBar.displayTemporary('@@@@@@@@ PHONE IS RINGING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@', 40 * 1000);
+  }
+  
+  if (!isPhoneBeingUsed && isPhoneRinging) {
+    isPhoneRinging = false;
+    sse.send('RING: stopped');
+    log('phone: stopped ringing');
+  }
+  return true;
+});
+
 const apiRoute = express.Router();
 app.use('/api', apiRoute);
 app.use(express.static(paths.staticHTML));
@@ -113,33 +139,24 @@ apiRoute.get('/users/update', (req, res) => {
 
   res.send('ERROR: the user list was updated less than 2 seconds ago');
 });
-/*
-apiRoute.get('/users/:fn/:token/', (req, res) => {
-
-});
-*/
 apiRoute.get('/phone/:fn/:token/', (req, res) => {
   const fromUser = users.find(user => user.hash === hashFn(req.params.token));
   const { fn: action } = req.params;
 
   if (fromUser) {
     const now = Date.now();
-    if (now - phoneLastDate > phoneDebounce) {
-      if (actionList.includes(action)) {
-        phoneLastDate = now;
+    if (now >= phoneNextAvailableDate) {
+      if (actions[action]) {
+        phoneNextAvailableDate = now + actions[action].debounce;
         exec(`${env.path}/door.py ${action}`);
         log(`phone: "${fromUser.name}" used action "${action}" succesfully`);
+
         const displayText = `${fromUser.name.substring(0, 34).split('<')[0]}\nopened doors through "${action}"`;
-        const msgBarRequest = request({
-          hostname: 'pi.towc',
-          port: 8080,
-          method: 'GET',
-          path: `/api/msg-bar/display-temporary/${encodeURIComponent(displayText)}/5000`,
+        msgBar.displayTemporary(displayText, 5000, (msgBarRequest) => {
+          msgBarRequest.on('error', (err) => {
+            log(`requests: could not connect to towcpi: ${err}`);
+          });
         });
-        msgBarRequest.on('error', (err) => {
-          log(`requests: could not connect to towcpi: ${err}`);
-        });
-        msgBarRequest.end();
 
         res.send('OK: your token is valid. Opening doors in 14s :)');
       } else {
@@ -148,7 +165,7 @@ apiRoute.get('/phone/:fn/:token/', (req, res) => {
       }
     } else {
       log(`phone: "${fromUser.name}" tried action "${action}" but was debounced`);
-      res.send(`ERROR: already processing a different request, try again in ${phoneDebounce - (now - phoneLastDate)}ms. If the problem persists, contact Matei Copot: matei@copot.eu`);
+      res.send(`ERROR: already processing a different request, try again in ${phoneNextAvailableDate - now}ms. If the problem persists, contact Matei Copot: matei@copot.eu`);
     }
   } else {
     log('door', 'not displaying token for sec reasons', false, 'invalid');
@@ -224,4 +241,6 @@ apiRoute.post('/users', (req, res) => {
       res.send(`ERROR: no action "${action}"`);
   }
 });
-app.listen(env.port, () => log('info: web server started'));
+app.listen(env.port, () => {
+  log('info: web server started')
+});
