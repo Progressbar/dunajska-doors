@@ -15,6 +15,7 @@ const stateStringToValue = stateStr =>
   ]).get(stateStr);
 
 const getCommandsFromSequence = sequence => sequence
+  .split('\n')
   .map(line => line.trim())
   .filter(line => line.length > 0)
   .map((line) => {
