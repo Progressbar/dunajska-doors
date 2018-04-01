@@ -1,9 +1,8 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const SSE = require('express-sse');
-const sse = new SSE('connected');
 
-const { request } = require('http');
+const sse = new SSE('connected');
 
 const { exec } = require('child_process');
 const fs = require('fs');
@@ -12,6 +11,7 @@ const env = require('./env');
 const addTokenHash = require('./add-token-hash');
 const paths = require('./paths');
 const phoneInput = require('./phone-input');
+const phoneCommands = require('./phone-commands');
 const msgBar = require('./msg-bar');
 
 // append to file
@@ -28,7 +28,7 @@ const { hash: hashFn } = env;
 
 const actions = {
   open: {
-    debounce: 14 * 1000, 
+    debounce: 14 * 1000,
   },
   answer: {
     debounce: 6 * 1000,
@@ -104,11 +104,11 @@ phoneInput.addListener((isPhoneBeingUsed) => {
   const now = Date.now();
   if (isPhoneBeingUsed && now > phoneNextAvailableDate) {
     isPhoneRinging = true;
-    sse.send('RING: started'); 
+    sse.send('RING: started');
     log('phone: ringing');
     msgBar.displayTemporary('@@@@@@@@ PHONE IS RINGING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@', 40 * 1000);
   }
-  
+
   if (!isPhoneBeingUsed && isPhoneRinging) {
     isPhoneRinging = false;
     sse.send('RING: stopped');
@@ -148,7 +148,7 @@ apiRoute.get('/phone/:fn/:token/', (req, res) => {
     if (now >= phoneNextAvailableDate) {
       if (actions[action]) {
         phoneNextAvailableDate = now + actions[action].debounce;
-        exec(`${env.path}/door.py ${action}`);
+        phoneCommands[action]();
         log(`phone: "${fromUser.name}" used action "${action}" succesfully`);
 
         const displayText = `${fromUser.name.substring(0, 34).split('<')[0]}\nopened doors through "${action}"`;
@@ -242,5 +242,5 @@ apiRoute.post('/users', (req, res) => {
   }
 });
 app.listen(env.port, () => {
-  log('info: web server started')
+  log('info: web server started');
 });
