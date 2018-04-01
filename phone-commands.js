@@ -56,7 +56,7 @@ const openCommands = getCommandsFromSequence(`
    0 end on
  300 end off
  200 zero on
- 200 zero off
+2000 zero off
  300 accept on
  300 accept off
 8000 zero on
