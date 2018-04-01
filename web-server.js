@@ -4,7 +4,6 @@ const SSE = require('express-sse');
 
 const sse = new SSE('connected');
 
-const { exec } = require('child_process');
 const fs = require('fs');
 
 const env = require('./env');
@@ -28,10 +27,10 @@ const { hash: hashFn } = env;
 
 const actions = {
   open: {
-    debounce: 14 * 1000,
+    debounce: phoneCommands.openTime,
   },
   answer: {
-    debounce: 6 * 1000,
+    debounce: phoneCommands.answerTime,
   },
 };
 let phoneNextAvailableDate = Date.now();
