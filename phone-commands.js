@@ -21,7 +21,7 @@ const getCommandsFromSequence = sequence => sequence
   .map((line) => {
     const [msDelta, pinName, state] = line.split(' ');
     return {
-      msDelta,
+      msDelta: +msDelta,
       pin: relays[pinName],
       state: stateStringToValue(state),
     };
