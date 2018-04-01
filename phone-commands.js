@@ -51,6 +51,8 @@ const useCommands = commands => new Promise((resolve, reject) => {
   });
 });
 
+const getTimeFromCommands = commands => commands.reduce((time, { msDelta }) => time + msDelta, 0);
+
 // ms-delta pin-name state
 const openCommands = getCommandsFromSequence(`
    0 end on
@@ -87,4 +89,6 @@ const answer = () =>
 module.exports = {
   open,
   answer,
+  openTime: getTimeFromCommands(openCommands),
+  answerTime: getTimeFromCommands(answerCommands),
 };
