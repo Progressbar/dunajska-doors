@@ -14,13 +14,30 @@ const phoneCommands = require('./phone-commands');
 const msgBar = require('./msg-bar');
 
 // append to file
-const stream = fs.createWriteStream(paths.logFile, { flags: 'a' });
+const logFileStream = fs.createWriteStream(paths.logFile, { flags: 'a' });
 
-const log = (...args) => {
-  const str = `${new Date().toJSON()}|${args.join(', ')}`;
-  stream.write(`${str}\n`);
-  // eslint-disable-next-line no-console
-  console.log(str);
+const log = (msg, options = {}) => {
+  const {
+    display = true,
+    write = true,
+    useSSE = false,
+  } = options;
+
+  const str = `${new Date().toJSON()}|${msg}`;
+
+  if (write) {
+    logFileStream.write(`${str}\n`);
+  }
+
+  if (display) {
+    // eslint-disable-next-line no-console
+    console.log(str);
+  }
+
+  if (useSSE) {
+    console.log(msg);
+    sse.send(msg);
+  }
 };
 
 const { hash: hashFn } = env;
@@ -97,21 +114,19 @@ updateUsers(() => log('user: updated users at initialization'));
 const app = express();
 app.use(bodyParser.json());
 
-app.get('/sse/phone-input', sse.init);
+app.get('/sse', sse.init);
 let isPhoneRinging = phoneInput.state;
 phoneInput.addListener((isPhoneBeingUsed) => {
   const now = Date.now();
   if (isPhoneBeingUsed && now > phoneNextAvailableDate) {
     isPhoneRinging = true;
-    sse.send('RING: started');
-    log('phone: ringing');
+    log('phone: ringing', { useSSE: true });
     msgBar.displayTemporary('@@@@@@@@ PHONE IS RINGING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@', 40 * 1000);
   }
 
   if (!isPhoneBeingUsed && isPhoneRinging) {
     isPhoneRinging = false;
-    sse.send('RING: stopped');
-    log('phone: stopped ringing');
+    log('phone: stopped ringing', { useSSE: true });
   }
   return true;
 });
@@ -148,7 +163,7 @@ apiRoute.get('/phone/:fn/:token/', (req, res) => {
       if (actions[action]) {
         phoneNextAvailableDate = now + actions[action].debounce;
         phoneCommands[action]();
-        log(`phone: "${fromUser.name}" used action "${action}" succesfully`);
+        log(`phone: "${fromUser.name}" used action "${action}" succesfully`, { useSSE: true });
 
         const displayText = `${fromUser.name.substring(0, 34).split('<')[0]}\nopened doors through "${action}"`;
         msgBar.displayTemporary(displayText, 5000, (msgBarRequest) => {
@@ -167,7 +182,7 @@ apiRoute.get('/phone/:fn/:token/', (req, res) => {
       res.send(`ERROR: already processing a different request, try again in ${phoneNextAvailableDate - now}ms. If the problem persists, contact Matei Copot: matei@copot.eu`);
     }
   } else {
-    log('door', 'not displaying token for sec reasons', false, 'invalid');
+    log('phone: someone tried to open with an invalid token');
     res.send('ERROR: your token is invalid. Try some other token :/');
   }
 });

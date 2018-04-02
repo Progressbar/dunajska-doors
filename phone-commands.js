@@ -1,10 +1,6 @@
 const { Gpio } = require('onoff');
 
-const relays = {
-  accept: new Gpio(23, 'out'),
-  end: new Gpio(24, 'out'),
-  zero: new Gpio(25, 'out'),
-};
+const canUseGpio = require('./can-use-gpios');
 
 const [ON, OFF] = [1, 0];
 
@@ -22,34 +18,10 @@ const getCommandsFromSequence = sequence => sequence
     const [msDelta, pinName, state] = line.split(' ');
     return {
       msDelta: +msDelta,
-      pin: relays[pinName],
+      pin: pinName,
       state: stateStringToValue(state),
     };
   });
-
-const useCommands = commands => new Promise((resolve, reject) => {
-  let time = 0;
-  const timeouts = [];
-
-  commands.forEach(({ msDelta, pin, state }, i) => {
-    time += msDelta;
-
-    const timeoutId = setTimeout(() => {
-      try {
-        pin.writeSync(state);
-
-        if (i === commands.length - 1) {
-          resolve();
-        }
-      } catch (e) {
-        timeouts.forEach(clearTimeout);
-        reject();
-      }
-    }, time);
-
-    timeouts.push(timeoutId);
-  });
-});
 
 const getTimeFromCommands = commands => commands.reduce((time, { msDelta }) => time + msDelta, 0);
 
@@ -80,15 +52,59 @@ const answerCommands = getCommandsFromSequence(`
  300 end off
 `);
 
-const open = () =>
-  useCommands(openCommands);
-
-const answer = () =>
-  useCommands(answerCommands);
-
-module.exports = {
-  open,
-  answer,
+const sharedExports = {
   openTime: getTimeFromCommands(openCommands),
   answerTime: getTimeFromCommands(answerCommands),
 };
+
+if (canUseGpio) {
+  const relays = {
+    accept: new Gpio(23, 'out'),
+    end: new Gpio(24, 'out'),
+    zero: new Gpio(25, 'out'),
+  };
+
+  const useCommands = commands => new Promise((resolve, reject) => {
+    let time = 0;
+    const timeouts = [];
+
+    commands.forEach(({ msDelta, pin, state }, i) => {
+      time += msDelta;
+
+      const timeoutId = setTimeout(() => {
+        try {
+          relays[pin].writeSync(state);
+
+          if (i === commands.length - 1) {
+            resolve();
+          }
+        } catch (e) {
+          timeouts.forEach(clearTimeout);
+          reject();
+        }
+      }, time);
+
+      timeouts.push(timeoutId);
+    });
+  });
+
+  const open = () =>
+    useCommands(openCommands);
+
+  const answer = () =>
+    useCommands(answerCommands);
+
+  module.exports = {
+    ...sharedExports,
+    open,
+    answer,
+  };
+} else {
+  const noopPromise = () => Promise.resolve();
+
+  module.exports = {
+    ...sharedExports,
+    open: noopPromise,
+    answer: noopPromise,
+  };
+}

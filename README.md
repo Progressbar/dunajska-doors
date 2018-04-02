@@ -1,21 +1,32 @@
 # SETUP
 
 ## required
+Install a recent node (9+) and npm (5+)
+
 ```bash
 $ cp env.sample.js env.js
 $ npm i
 ```
 
 ## optional
-none yet
+Modify the `env.js` file to your liking
 
 # RUN
 ```bash
 $ node web-server
 ```
 
-# NOTES
-The python script will only work on the rpi. Right now it just errors out and node ignores it
+# UTILS
+If you want to test the phone inputs, log into the RPI (or whichever device is attached to the phone), and run `node phone-command-stats`. This will display some information. You can tweak the commands through the DSL in `phone-commands.js` stored in the sequence variables.
 
-You can reach the server at `http://localhost:8080`, but you change the port in the env file
+To test if your device is supporting GPIOs in its current configuration, run `require('./can-use-gpios')` within node:
+
+```bash
+pi@some.pi:dunajska-doors$ node
+> require('./can-use-gpios')
+true
+```
+
+# NOTES
+By default, you can reach the server at `http://localhost:8080`, but you can change the port in the env file
 
