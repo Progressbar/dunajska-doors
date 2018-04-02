@@ -1,56 +1,64 @@
 const { Gpio } = require('onoff');
-const phoneInputPin = new Gpio(12, 'in', 'falling');
 
-const listeners = [];
-const blinkingDebounceMS = 1000;
-let nextNoRingCheck = Date.now();
+const canUseGpio = require('./can-use-gpios');
 
-const prevInputs = [];
-let lastIsPhoneBeingUsed = false;
+if (canUseGpio) {
+  const phoneInputPin = new Gpio(12, 'in', 'falling');
 
-const prevInputsStorageAmount = 10;
+  const listeners = [];
 
-let prevInput = 1;
-setInterval(() => {
-  phoneInputPin.read((err, currentInput) => {
-    const [prevInput, _] = prevInputs;
-    prevInputs.unshift(currentInput);
-    if(prevInputs.length > prevInputsStorageAmount) {
-      prevInputs.pop();
+  const prevInputs = [];
+  let lastIsPhoneBeingUsed = false;
 
-      const isPhoneBeingUsed = prevInputs.filter(Boolean).length < prevInputsStorageAmount;
+  const prevInputsStorageAmount = 10;
 
-      if(isPhoneBeingUsed !== lastIsPhoneBeingUsed) {
-        lastIsPhoneBeingUsed = isPhoneBeingUsed;
-        listeners.filter(({ listener }) => {
-          return listener(isPhoneBeingUsed);
-        });
+  setInterval(() => {
+    phoneInputPin.read((err, currentInput) => {
+      prevInputs.unshift(currentInput);
+      if (prevInputs.length > prevInputsStorageAmount) {
+        prevInputs.pop();
+
+        const isPhoneBeingUsed = prevInputs.filter(Boolean).length < prevInputsStorageAmount;
+
+        if (isPhoneBeingUsed !== lastIsPhoneBeingUsed) {
+          lastIsPhoneBeingUsed = isPhoneBeingUsed;
+          listeners.filter(({ listener }) => listener(isPhoneBeingUsed));
+        }
       }
-    }
-
-  });
-}, 100);
-
-let listenerIdIncrement = 0;
-module.exports = {
-  get state() {
-    return lastIsPhoneBeingUsed; 
-  },
-  addListener: (listener) => {
-    const id = ++listenerIdIncrement;
-    listeners.push({
-      id,
-      listener,
     });
+  }, 100);
 
-    return id;
-  },
-  removeListener: (id) => {
-    const index = listeners.findIndex(({ id: listenerId }) => id === listenerId);
-    if(index > -1) {
-      listeners.splice(index, 1); 
-      return true;
-    } 
-    return false;
-  }
+  let listenerIdIncrement = 0;
+  module.exports = {
+    get state() {
+      return lastIsPhoneBeingUsed;
+    },
+    addListener: (listener) => {
+      listenerIdIncrement += 1;
+      const id = listenerIdIncrement;
+
+      listeners.push({
+        id,
+        listener,
+      });
+
+      return id;
+    },
+    removeListener: (id) => {
+      const index = listeners.findIndex(({ id: listenerId }) => id === listenerId);
+      if (index > -1) {
+        listeners.splice(index, 1);
+        return true;
+      }
+      return false;
+    },
+  };
+} else {
+  const noop = () => {};
+
+  module.exports = {
+    state: false,
+    addListener: noop,
+    removeListener: noop,
+  };
 }
