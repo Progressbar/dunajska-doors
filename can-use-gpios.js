@@ -4,7 +4,7 @@ let canUse = true;
 
 try {
   // eslint-disable-next-line no-new
-  new Gpio();
+  new Gpio(1, 'in');
 } catch (e) {
   canUse = false;
 }
