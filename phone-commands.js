@@ -41,6 +41,18 @@ const openCommands = getCommandsFromSequence(`
  300 end off
 `);
 
+/*
+const answerCommands = getCommandsFromSequence(`
+   0 accept on
+ 300 accept off
+ 400 zero on
+ 300 zero off
+ 200 zero on
+ 300 zero off
+1000 end on
+ 300 end off
+`);
+*/
 const answerCommands = getCommandsFromSequence(`
    0 accept on
  300 accept off

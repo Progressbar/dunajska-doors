@@ -1,4 +1,5 @@
 const { request } = require('http');
+const log = require('./logger');
 
 const opts = {
   hostname: 'pi.towc',
@@ -15,6 +16,9 @@ module.exports = {
     if(cb) {
       cb(req);
     }
+    req.on('error', (err) => {
+      log(`requests: could not connect to towcpi: ${err}`);
+    });
     req.end();
     return req;
   },

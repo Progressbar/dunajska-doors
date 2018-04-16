@@ -13,32 +13,7 @@ const phoneInput = require('./phone-input');
 const phoneCommands = require('./phone-commands');
 const msgBar = require('./msg-bar');
 
-// append to file
-const logFileStream = fs.createWriteStream(paths.logFile, { flags: 'a' });
-
-const log = (msg, options = {}) => {
-  const {
-    display = true,
-    write = true,
-    useSSE = false,
-  } = options;
-
-  const str = `${new Date().toJSON()}|${msg}`;
-
-  if (write) {
-    logFileStream.write(`${str}\n`);
-  }
-
-  if (display) {
-    // eslint-disable-next-line no-console
-    console.log(str);
-  }
-
-  if (useSSE) {
-    console.log(msg);
-    sse.send(msg);
-  }
-};
+const log = require('./logger');
 
 const { hash: hashFn } = env;
 
@@ -120,13 +95,13 @@ phoneInput.addListener((isPhoneBeingUsed) => {
   const now = Date.now();
   if (isPhoneBeingUsed && now > phoneNextAvailableDate) {
     isPhoneRinging = true;
-    log('phone: ringing', { useSSE: true });
+    log('phone: ringing', { sse, broadcast: true });
     msgBar.displayTemporary('@@@@@@@@ PHONE IS RINGING @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@', 40 * 1000);
   }
 
   if (!isPhoneBeingUsed && isPhoneRinging) {
     isPhoneRinging = false;
-    log('phone: stopped ringing', { useSSE: true });
+    log('phone: stopped ringing', { sse, broadcast: true });
   }
   return true;
 });
@@ -163,14 +138,10 @@ apiRoute.get('/phone/:fn/:token/', (req, res) => {
       if (actions[action]) {
         phoneNextAvailableDate = now + actions[action].debounce;
         phoneCommands[action]();
-        log(`phone: "${fromUser.name}" used action "${action}" succesfully`, { useSSE: true });
+        log(`phone: "${fromUser.name}" used action "${action}" succesfully`, { sse });
 
         const displayText = `${fromUser.name.substring(0, 34).split('<')[0]}\nopened doors through "${action}"`;
-        msgBar.displayTemporary(displayText, 5000, (msgBarRequest) => {
-          msgBarRequest.on('error', (err) => {
-            log(`requests: could not connect to towcpi: ${err}`);
-          });
-        });
+        msgBar.displayTemporary(displayText);
 
         res.send('OK: your token is valid. Opening doors in 14s :)');
       } else {
