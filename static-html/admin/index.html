@@ -26,23 +26,49 @@
     </div>
     <div class="section">
       <h1>Add user</h1>
-      <p>privileges are a space-separated list of "add-user read-list"</p>
       <label class="label">
         Name
         <div class="field">
           <input class="input" id="input_new_name" placeholder="Charles Babbage">
         </div>
       </label>
+      <div class="label">
+        <p>Donation Level</p>
+        <p class="is-size-7">aIf you're inviting a contractor without a desk or similar, "Honorary Guest" is the right option</p>
+      </div>
+      <ul class="control">
+        <label class="radio">
+          <input type="radio" name="donation-level" value="Honorary Guest" checked> Honorary Guest
+        </label>
+        <br>
+        <label class="radio">
+          <input type="radio" name="donation-level" value="Daypass"> Daypass
+        </label>
+        <br>
+        <label class="radio">
+          <input type="radio" name="donation-level" value="Hot Desk"> Hot Desk
+        </label>
+        <br>
+        <label class="radio">
+          <input type="radio" name="donation-level" value="Fixed Desk"> Fixed Desk
+        </label>
+        <br>
+        <label class="radio">
+          <input type="radio" name="donation-level" value="custom"> custom
+          <input class="input" id="input_new_donation_level_custom" placeholder="Custom Status">
+        </label>
+        <br>
+      </ul>
       <label class="label">
-        Why
+        Company (leave blank if none)
         <div class="field">
-          <input class="input" id="input_new_why" placeholder="Honorary Guest, Fixed Desk">
+          <input class="input" id="input_new_company" placeholder="examples: Google, Apple, Wikipedia, ">
         </div>
       </label>
       <label class="label">
         Email/contact
         <div class="field">
-          <input class="input" id="input_new_contact" placeholder="charles.babbage@gmail.com">
+          <input class="input" id="input_new_contact" placeholder="charles.babbage@gmail.com, github.com/charles-babbage">
         </div>
       </label>
       <label class="label">
@@ -50,7 +76,7 @@
         <p class="is-size-7">at least 9 chars long, must contain at least 1 uppercase, lowercase, and decimal character</p>
         <div class="field has-addons">
           <div class="control">
-            <input class="input" id=input_new_token type=password placeholder="password123">
+            <input class="input" id=input_new_token type=password placeholder="Password123">
           </div>
           <div class="control">
             <button class="button" id=button_show_new_token>toggle show</button>
@@ -59,9 +85,10 @@
         <div class="notification is-danger is-invisible" id=new_token_error></div>
       </label>
       <label class="label">
-        Privileges
+        <p>Privileges</p>
+        <span class="is-size-7">this is a list of actions the new user will be able to use. Leave defaults if you're not sure</span>
         <div class="field">
-          <input class="input" id="input_new_privileges" placeholder="add-user remove-user read-list">
+          <input class="input" id="input_new_privileges" placeholder="open answer" value="open answer">
         </div>
       </label>
       <br/>
@@ -112,6 +139,20 @@ button_clear_responses.addEventListener('click', () => {
 let isNewTokenShowing = false;
 button_show_new_token.addEventListener('click', () => input_new_token.setAttribute('type', (isNewTokenShowing = !isNewTokenShowing) ? 'text' : 'password'));
 button_add_user.addEventListener('click', () => {
+  const name = input_new_name.value;
+
+  const selectedDonationLevel = document.querySelector('input[name="donation-level"]:checked').value;
+  const donationLevel = selectedDonationLevel === 'custom'
+    ? input_new_donation_level_custom.value
+    : selectedDonationLevel;
+  const company = input_new_company.value;
+  const details = [
+    donationLevel,
+    company,
+  ].filter(Boolean).join(', ');
+
+  const contact = input_new_contact.value;
+
   fetch(`/api/users`, { 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -119,7 +160,7 @@ button_add_user.addEventListener('click', () => {
       action: 'add user',
       fromToken: input_token.value,
       token: input_new_token.value,
-      name: `${input_new_name.value} (${input_new_why.value}) <${input_new_contact.value}>`,
+      name: `${name} (${details}) <${contact}>`,
       privileges: input_new_privileges.value.split(' ')
     })
   })
@@ -130,7 +171,8 @@ button_add_user.addEventListener('click', () => {
       if(res.startsWith('OK')) {
         input_new_token.value = '';
         input_new_name.value = '';
-        input_new_why.value = '';
+        input_new_donation_level_custom.value = '';
+        input_new_company.value = '';
         input_new_contact.value = '';
         input_new_privileges.value = '';
         new_token_error.textContent = '';
