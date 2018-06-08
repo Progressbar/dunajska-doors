@@ -44,8 +44,9 @@ const getTimeFromCommands = commands => commands.reduce((time, { msDelta }) => t
 const openCommands = getCommandsFromSequence(`
  0 end on
  300 end off
- 200 zero on
+ 100 zero on
  1000 zero off
+ 300
  5000 end on
  300 end off
 `)
