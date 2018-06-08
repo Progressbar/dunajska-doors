@@ -26,20 +26,29 @@ const getCommandsFromSequence = sequence => sequence
 const getTimeFromCommands = commands => commands.reduce((time, { msDelta }) => time + msDelta, 0);
 
 // ms-delta pin-name state
+// const openCommands = getCommandsFromSequence(`
+//    0 end on
+//  300 end off
+//  200 zero on
+// 2000 zero off
+//  300 accept on
+//  300 accept off
+// 8000 zero on
+//  300 zero off
+//  200 zero on
+//  300 zero off
+// 5000 end on
+//  300 end off
+// `);
+
 const openCommands = getCommandsFromSequence(`
-   0 end on
+ 0 end on
  300 end off
  200 zero on
-2000 zero off
- 300 accept on
- 300 accept off
-8000 zero on
- 300 zero off
- 200 zero on
- 300 zero off
-5000 end on
+ 1000 zero off
+ 5000 end on
  300 end off
-`);
+`)
 
 /*
 const answerCommands = getCommandsFromSequence(`
