@@ -33,7 +33,7 @@ const openCommands = getCommandsFromSequence(`
 2000 zero off
  300 accept on
  300 accept off
-8000 zero on
+10000 zero on
  300 zero off
  200 zero on
  300 zero off
